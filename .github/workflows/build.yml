@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release'
+        required: true
+        default: 'v0.0.0'
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Checkout matrix-ios-sdk
+      uses: actions/checkout@v2
+      with:
+        repository: matrix-org/matrix-ios-sdk
+        ref: ${{ github.event.inputs.version }}
+        path: matrix-ios-sdk
+        
+    - name: Install Pods
+      working-directory: matrix-ios-sdk
+      run: pod install
+      
+    - name: Build for iOS
+      working-directory: matrix-ios-sdk
+      run: xcodebuild archive -workspace MatrixSDK.xcworkspace -scheme MatrixSDK-iOS -destination "generic/platform=iOS" -archivePath build/MatrixSDK-iOS SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES IPHONEOS_DEPLOYMENT_TARGET=11.0 GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS=NO
+      
+    - name: Build for Simulator
+      working-directory: matrix-ios-sdk
+      run: xcodebuild archive -workspace MatrixSDK.xcworkspace -scheme MatrixSDK-iOS -destination "generic/platform=iOS Simulator" -archivePath build/MatrixSDK-iOSSimulator SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES IPHONEOS_DEPLOYMENT_TARGET=11.0 GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS=NO
+      
+    - name: Build for Catalyst
+      working-directory: matrix-ios-sdk
+      run: xcodebuild archive -workspace MatrixSDK.xcworkspace -scheme MatrixSDK-iOS -destination "generic/platform=macOS,variant=Mac Catalyst" -archivePath ./build/MatrixSDK-MacCatalyst SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES IPHONEOS_DEPLOYMENT_TARGET=13.0 GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS=NO
+      
+    - name: Make XCFramework
+      working-directory: matrix-ios-sdk/build
+      run: |
+        xcodebuild -create-xcframework -framework MatrixSDK-iOS.xcarchive/Products/Library/Frameworks/MatrixSDK.framework -framework MatrixSDK-iOSSimulator.xcarchive/Products/Library/Frameworks/MatrixSDK.framework -framework MatrixSDK-MacCatalyst.xcarchive/Products/Library/Frameworks/MatrixSDK.framework -output MatrixSDK.xcframework
+        zip -ry MatrixSDK.xcframework.zip MatrixSDK.xcframework
+        
+    - name: Update Package Manifest
+      run: |
+        swift package compute-checksum matrix-ios-sdk/build/MatrixSDK.xcframework.zip > checksum
+        CHECKSUM=$(cat checksum)
+        cat checksum
+        swift generate-package.swift "https://github.com/${{ github.repository_owner }}/MatrixSDK/releases/download/${{ github.event.inputs.version }}/MatrixSDK.xcframework.zip" "$CHECKSUM"
+        
+    - name: Push and Tag
+      run: |
+        git config user.name github-actions
+        git config user.email github-actions@github.com
+        git add Package.swift
+        git commit -m "Release ${{ github.event.inputs.version }}"
+        git push
+        git tag ${{ github.event.inputs.version }}
+        git push origin ${{ github.event.inputs.version }}
+        
+    - name: Create Release
+      id: create-release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.inputs.version }}
+        release_name: ${{ github.event.inputs.version }}
+        draft: false
+        prerelease: false
+        
+    - name: Upload XCFramework
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create-release.outputs.upload_url }}
+        asset_path: matrix-ios-sdk/build/MatrixSDK.xcframework.zip
+        asset_name: MatrixSDK.xcframework.zip
+        asset_content_type: application/zip
+        
+    - name: Upload Checksum
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create-release.outputs.upload_url }}
+        asset_path: checksum
+        asset_name: MatrixSDK.xcframework.zip.checksum
+        asset_content_type: text/plain
