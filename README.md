@@ -7,11 +7,14 @@ The framework contains the following binaries:
 - iOS Simulator (arm64/x86_64)
 - Mac Catalyst (arm64/x86_64)
 
-A macOS binary will hopefully be added once [#983](https://github.com/matrix-org/matrix-ios-sdk/pull/983) is resolved.
+A macOS binary will hopefully be added once [matrix-org/matrix-ios-sdk#983](https://github.com/matrix-org/matrix-ios-sdk/pull/983) is resolved.
 
 ## Installation
 
-To add MatrixSDK to your Xcode project, choose `File | Swift Packages | Add Package Dependency...` and enter https://github.com/niochat/MatrixSDK into the dialog box.
+To add MatrixSDK to your Xcode project, choose `File | Swift Packages | Add Package Dependency...` and enter the following url.
+```
+https://github.com/niochat/MatrixSDK
+```
 
 Xcode if you discover multiple copies of MatrixSDK.framework embedded in your final target ([SR-13840](https://bugs.swift.org/browse/SR-13840)) add a Run Script phase to your target:
 ```
