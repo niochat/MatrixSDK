@@ -39,6 +39,18 @@ jobs:
       working-directory: matrix-ios-sdk
       run: xcodebuild archive -workspace MatrixSDK.xcworkspace -scheme MatrixSDK-iOS -destination "generic/platform=macOS,variant=Mac Catalyst" -archivePath ./build/MatrixSDK-MacCatalyst SKIP_INSTALL=NO BUILD_LIBRARY_FOR_DISTRIBUTION=YES IPHONEOS_DEPLOYMENT_TARGET=13.0 GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS=NO
       
+    - name: Set Bundle Version
+      working-directory: matrix-ios-sdk/build
+      run: |
+        VERSION=${{ github.event.inputs.version }}
+        SHORT_VERSION=${VERSION#v}
+        plutil -insert CFBundleShortVersionString -string $SHORT_VERSION MatrixSDK-iOS.xcarchive/Products/Library/Frameworks/MatrixSDK.framework/Info.plist
+        plutil -insert CFBundleShortVersionString -string $SHORT_VERSION MatrixSDK-iOSSimulator.xcarchive/Products/Library/Frameworks/MatrixSDK.framework/Info.plist
+        plutil -insert CFBundleShortVersionString -string $SHORT_VERSION MatrixSDK-MacCatalyst.xcarchive/Products/Library/Frameworks/MatrixSDK.framework/Resources/Info.plist
+        plutil -insert CFBundleVersion -string $GITHUB_RUN_NUMBER MatrixSDK-iOS.xcarchive/Products/Library/Frameworks/MatrixSDK.framework/Info.plist
+        plutil -insert CFBundleVersion -string $GITHUB_RUN_NUMBER MatrixSDK-iOSSimulator.xcarchive/Products/Library/Frameworks/MatrixSDK.framework/Info.plist
+        plutil -insert CFBundleVersion -string $GITHUB_RUN_NUMBER MatrixSDK-MacCatalyst.xcarchive/Products/Library/Frameworks/MatrixSDK.framework/Resources/Info.plist
+      
     - name: Make XCFramework
       working-directory: matrix-ios-sdk/build
       run: |
