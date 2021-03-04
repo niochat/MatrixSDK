@@ -6,8 +6,7 @@ The framework contains the following binaries:
 - iOS (arm64)
 - iOS Simulator (arm64/x86_64)
 - Mac Catalyst (arm64/x86_64)
-
-A macOS binary will hopefully be added once [matrix-org/matrix-ios-sdk#983](https://github.com/matrix-org/matrix-ios-sdk/pull/983) is resolved.
+- macOS (arm64/x86_64): v0.18.2 upwards
 
 ## Installation
 
