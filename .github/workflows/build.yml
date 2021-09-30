@@ -19,7 +19,7 @@ jobs:
     - name: Checkout matrix-ios-sdk
       uses: actions/checkout@v2
       with:
-        repository: matrix-org/matrix-ios-sdk
+        repository: globekeeper/matrix-ios-sdk
         ref: ${{ github.event.inputs.version }}
         path: matrix-ios-sdk
         
